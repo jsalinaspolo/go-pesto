@@ -1,0 +1,106 @@
+
+[apps]
+
+  [apps.alertmanager]
+    chart = "zopa/alertmanager"
+    enabled = true
+    name = "alertmanager"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/alertmanager.yaml"
+    version = "1.3.1"
+
+  [apps.card-streamster]
+    chart = "zopa/zopa-app"
+    enabled = true
+    name = "card-streamster"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/streamster.yaml"
+    version = "3.4.1"
+
+  [apps.card-zetryer]
+    chart = "zopa/zopa-app"
+    enabled = true
+    name = "card-zetryer"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/zopa-zetryer.yaml"
+    version = "1.4.3"
+
+  [apps.kc-creditcards-sink-cctest]
+    chart = "zopa/kafka-connect"
+    enabled = true
+    name = "kc-creditcards-sink-cctest"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/kc-creditcards-sink-cctest.yaml"
+    version = "2.0.17"
+
+  [apps.kc-creditcards-sink-txs-card]
+    chart = "zopa/kafka-connect"
+    enabled = true
+    name = "kc-creditcards-sink-txs-card"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/kc-creditcards-sink-txs-card.yaml"
+    version = "2.0.17"
+
+  [apps.kc-creditcards-source-cctest]
+    chart = "zopa/kafka-connect"
+    enabled = true
+    name = "kc-creditcards-source-cctest"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/kc-creditcards-source-cctest.yaml"
+    version = "2.0.17"
+
+  [apps.kc-creditcards-source-txs-card]
+    chart = "zopa/kafka-connect"
+    enabled = true
+    name = "kc-creditcards-source-txs-card"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/kc-creditcards-source-txs-card.yaml"
+    version = "2.0.17"
+
+  [apps.lenses]
+    chart = "zopa/kafka-lenses"
+    enabled = true
+    name = "lenses"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/lenses.yaml"
+    version = "3.2.2"
+
+  [apps.prometheus]
+    chart = "zopa/prometheus"
+    enabled = true
+    name = "prometheus"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/prometheus.yaml"
+    version = "2.1.2"
+
+  [apps.zelay-payments]
+    chart = "zopa/zelay"
+    enabled = true
+    name = "zelay-payments"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    valuesFile = "cc/zelay-payments.yaml"
+    version = "2.0.4"
+
+[helmRepos]
+  zopa = "http://packages.dns.ad.zopa.com/artifactory/helm"
+
+[metadata]
+  maintainer = "ZRE"
+
+[namespaces]
+
+  [namespaces.cc]
+    installTiller = true
+
+[settings]
+  kubeContext = "$KUBE_CONTEXT"
