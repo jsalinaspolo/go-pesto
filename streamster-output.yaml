@@ -1,0 +1,29 @@
+deployment:
+  containerName: streamster-analytics
+  environment: staging
+  resources:
+    memory: 4Gi
+  strategy:
+    type: Recreate
+  version: 1.4.5
+envVariables:
+  conmanAppName: credit-card-streamster
+  conmanNamespace: uat
+  enabled: true
+  kafkaRole: client
+  kafkaVaultIssuer: product-uat-kafka-pki/issue/client
+  vaultBackend: kubernetes-uat
+ingress:
+  dns: .staging.zopa
+  public: false
+probes:
+  livenessEnabled: true
+  livenessPath: /_probes/liveness
+  readinessEnabled: true
+  readinessPath: /_probes/readiness
+service:
+  noClusterIP: false
+  port: 443
+  secure: true
+storage:
+  statefulSet: false
