@@ -1,0 +1,106 @@
+[metadata]
+maintainer = "ZRE"
+
+# Required
+[settings]
+kubeContext = "$KUBE_CONTEXT"
+
+# Required
+[helmRepos]
+zopa = "http://packages.dns.ad.zopa.com/artifactory/helm"
+
+# Required
+[namespaces]
+    [namespaces.cc]
+    installTiller = true
+
+[apps]
+    [apps.alertmanager]
+    name = "alertmanager"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/alertmanager"
+    version = "1.3.1"
+    valuesFile = "cc/alertmanager.yaml"
+
+    [apps.lenses]
+    name = "lenses"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/kafka-lenses"
+    version = "3.2.2"
+    valuesFile = "cc/lenses.yaml"
+
+    [apps.prometheus]
+    name = "prometheus"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/prometheus"
+    version = "2.1.2"
+    valuesFile = "cc/prometheus.yaml"
+
+    [apps.zelay-payments]
+    name = "zelay-payments"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/zelay"
+    version = "2.0.4"
+    valuesFile = "cc/zelay-payments.yaml"
+
+    [apps.kc-creditcards-sink-cctest]
+    name = "kc-creditcards-sink-cctest"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/kafka-connect"
+    version = "2.0.17"
+    valuesFile = "cc/kc-creditcards-sink-cctest.yaml"
+
+    [apps.kc-creditcards-source-cctest]
+    name = "kc-creditcards-source-cctest"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/kafka-connect"
+    version = "2.0.17"
+    valuesFile = "cc/kc-creditcards-source-cctest.yaml"
+
+    [apps.kc-creditcards-sink-txs-card]
+    name = "kc-creditcards-sink-txs-card"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/kafka-connect"
+    version = "2.0.17"
+    valuesFile = "cc/kc-creditcards-sink-txs-card.yaml"
+
+    [apps.kc-creditcards-source-txs-card]
+    name = "kc-creditcards-source-txs-card"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/kafka-connect"
+    version = "2.0.17"
+    valuesFile = "cc/kc-creditcards-source-txs-card.yaml"
+
+    [apps.card-zetryer]
+    name = "card-zetryer"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/zopa-app"
+    version = "3.4.1"
+    valuesFile = "cc/zopa-zetryer.yaml"
+
+    [apps.card-streamster]
+    name = "card-streamster"
+    namespace = "cc"
+    tillerNamespace = "cc"
+    enabled = true
+    chart = "zopa/zopa-app"
+    version = "3.4.1"
+    valuesFile = "cc/streamster.yaml"
