@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -13,55 +14,107 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 )
 
-var ghToken = "token"
-var repository = "https://github.dns.ad.zopa.com/zopaUK/pesto.git"
-var updatedVersion = "1.4.5"
-var inputFile = "tmp/streamster.yaml"
-var outputFile = "tmp/streamster-output.yaml"
+var args PestoArgs
+var helmRepository = "https://github.dns.ad.zopa.com/zopaUK/helm-state.git"
+var temp = "tmp"
+
+type PestoArgs struct {
+	Token        string
+	Environment  string
+	Namespace    string
+	Applications []string
+	Version      string
+}
+
+func (args *PestoArgs) files() []string {
+	var f []string
+	for _, v := range args.Applications {
+		f = append(f, fmt.Sprintf("%s/%s/%s", args.Environment, args.Namespace, v))
+
+	}
+	return f
+}
+
+func (args *PestoArgs) branchName() string {
+	return fmt.Sprintf("helm-change-%s-%s-%s", args.Environment, args.Namespace, args.Version)
+}
+
+func (args *PestoArgs) commitMessage() string {
+	return fmt.Sprintf("helm change %s-%s-%s", args.Environment, args.Namespace, args.Version)
+}
+
+func (args *PestoArgs) pullRequestTitle() string {
+	return fmt.Sprintf("Automated PR %s-%s-%s", args.Environment, args.Namespace, args.Version)
+}
+
+func (args *PestoArgs) jiraTicket() string {
+	ticket := strings.ToUpper(fmt.Sprintf("PESTO-%s-%s-%s", args.Environment, args.Namespace, args.Version))
+	return fmt.Sprintf("https://jira.zopa/browse/%s", ticket)
+}
 
 func main() {
-	repository := cloneRepository(repository, "tmp")
+	pestoArgs, err := validateArgs(os.Args)
+	CheckIfError(err)
+	args = *pestoArgs
+
+	repository := cloneRepository(helmRepository, temp)
 	updateVersion()
 	commit(repository)
 	push(repository)
 	makePullRequest()
 }
 
-func updateVersion() {
-	b, err := ioutil.ReadFile(inputFile)
-	CheckIfError(err)
-
-	chart := map[string]interface{}{
-		"deployment": map[interface{}]interface{}{},
+func validateArgs(args []string) (*PestoArgs, error) {
+	numArgs := 6
+	if len(args) != numArgs {
+		return nil, errors.New(fmt.Sprintf("Arguments %d different than %d", len(args), numArgs))
 	}
 
-	err = yaml.Unmarshal(b, &chart)
-	CheckIfError(err)
+	token := args[1]
+	env := args[2]
+	namespace := args[3]
+	apps := strings.Split(args[4], ",")
+	version := args[5]
+	return &PestoArgs{token, env, namespace, apps, version}, nil
+}
 
-	deployment := chart["deployment"].(map[interface{}]interface{})
+func updateVersion() {
+	for _, file := range args.files() {
+		b, err := ioutil.ReadFile(temp + "/" + file)
+		CheckIfError(err)
 
-	deployment["version"] = updatedVersion
-	chart["deployment"] = deployment
-	newFile, err := yaml.Marshal(chart)
-	CheckIfError(err)
+		chart := map[string]interface{}{
+			"deployment": map[interface{}]interface{}{},
+		}
 
-	//err = ioutil.WriteFile(file, newFile, 0)
-	err = ioutil.WriteFile(outputFile, newFile, 0666)
-	CheckIfError(err)
+		err = yaml.Unmarshal(b, &chart)
+		CheckIfError(err)
+
+		deployment := chart["deployment"].(map[interface{}]interface{})
+
+		deployment["version"] = args.Version
+		chart["deployment"] = deployment
+		newFile, err := yaml.Marshal(chart)
+		CheckIfError(err)
+
+		err = ioutil.WriteFile(temp+"/"+file, newFile, 0)
+		CheckIfError(err)
+	}
 }
 
 func cloneRepository(url string, directory string) *git.Repository {
 	// Clone the given repository to the given directory
 	Info("git clone %s %s --recursive", url, directory)
 
-	os.RemoveAll("tmp")
+	os.RemoveAll(temp)
 	repository, err := git.PlainClone(directory, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: "whatever",
-			Password: ghToken,
+			Password: args.Token,
 		},
 		URL:      url,
 		Progress: os.Stdout,
@@ -77,25 +130,26 @@ func commit(repository *git.Repository) {
 	CheckIfError(err)
 
 	// Adds the new file to the staging area.
-	Info("git add streamster-output.yaml")
-	_, err = w.Add("streamster-output.yaml")
-	CheckIfError(err)
+	for _, file := range args.files() {
+		Info("git add " + file)
+		_, err = w.Add(file)
+		CheckIfError(err)
+	}
 
 	// We can verify the current status of the worktree using the method Status.
 	Info("git status --porcelain")
 	status, err := w.Status()
 	CheckIfError(err)
-
 	fmt.Println(status)
 
 	// Commits the current staging area to the repository, with the new file
 	// just created. We should provide the object.Signature of Author of the
 	// commit.
-	Info("git commit -m \"example go-git commit\"")
-	commit, err := w.Commit("example go-git commit", &git.CommitOptions{
+	Info("git commit -m \"" + args.commitMessage() + "\"")
+	commit, err := w.Commit(args.commitMessage(), &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "John Doe",
-			Email: "john@doe.org",
+			Name:  "Javier Salinas",
+			Email: "javier.salinas@zopa.com",
 			When:  time.Now(),
 		},
 	})
@@ -110,7 +164,7 @@ func commit(repository *git.Repository) {
 func push(repository *git.Repository) {
 	Info("git push")
 	upstreamReference := plumbing.ReferenceName("+refs/heads/master")
-	downstreamReference := plumbing.ReferenceName("refs/heads/helm-change")
+	downstreamReference := plumbing.ReferenceName("refs/heads/" + args.branchName())
 	referenceList := append([]config.RefSpec{},
 		config.RefSpec(upstreamReference+":"+downstreamReference))
 
@@ -118,36 +172,37 @@ func push(repository *git.Repository) {
 		RefSpecs: referenceList,
 		Auth: &http.BasicAuth{
 			Username: "-",
-			Password: ghToken,
+			Password: args.Token,
 		},
 	})
 	CheckIfError(err)
 }
 
 func githubClient() *github.Client {
-	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: ghToken},
+		&oauth2.Token{AccessToken: args.Token},
 	)
-	tc := oauth2.NewClient(ctx, ts)
+	tc := oauth2.NewClient(context.Background(), ts)
 
-	client, err := github.NewEnterpriseClient("https://github.dns.ad.zopa.com", "zopaUK", tc)
+	client, err := github.NewEnterpriseClient("https://github.dns.ad.zopa.com/api/v3", "zopaUK", tc)
 	CheckIfError(err)
 	return client
 }
 
 func makePullRequest() {
+	Info("make pull request")
+
 	client := githubClient()
 
 	newPR := &github.NewPullRequest{
-		Title:               github.String("My awesome pull request"),
-		Head:                github.String("helm-change"),
+		Title:               github.String(args.pullRequestTitle()),
+		Head:                github.String(args.branchName()),
 		Base:                github.String("master"),
-		Body:                github.String("This is the description of the PR created with the package `github.com/google/go-github/github`"),
+		Body:                github.String(args.jiraTicket()),
 		MaintainerCanModify: github.Bool(true),
 	}
 
-	pr, _, err := client.PullRequests.Create(context.Background(), "zopaUK", "pesto", newPR)
+	pr, _, err := client.PullRequests.Create(context.Background(), "zopaUK", "helm-state", newPR)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -15,5 +15,3 @@ RUN openssl req -subj "/C=UK/ST=London/L=London/O=Zopa/OU=Development/CN=*" \
                 -x509 -nodes -days 3650 -newkey rsa:2048 \
                 -keyout /opt/certs/tls.key \
                 -out /opt/certs/tls.crt
-
-ENTRYPOINT ["/app"]
