@@ -148,8 +148,8 @@ func commit(repository *git.Repository) {
 	Info("git commit -m \"" + args.commitMessage() + "\"")
 	commit, err := w.Commit(args.commitMessage(), &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "Javier Salinas",
-			Email: "javier.salinas@zopa.com",
+			Name:  "zopadev",
+			Email: "dev@zopa.com",
 			When:  time.Now(),
 		},
 	})
