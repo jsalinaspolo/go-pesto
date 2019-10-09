@@ -21,6 +21,7 @@ push:
 	git push --tags
 	@echo "***Pushing docker image***"
 	docker push $(PREFIX):$(VERSION)
+	docker push $(PREFIX):latest
 
 tag:
 	@echo "***Tagging git $(VERSION)***"
