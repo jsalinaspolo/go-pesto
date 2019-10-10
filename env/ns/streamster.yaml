@@ -1,34 +1,29 @@
 deployment:
   containerName: streamster-analytics
   environment: staging
-  version: 1.0.26
   resources:
     memory: 4Gi
   strategy:
     type: Recreate
-
-service:
-  port: 443 # the port on which the container serves traffic
-  secure: true # whether that port is serving secure (SSL) traffic
-  noClusterIP: false # only needs enabling in special cases
-
+  version: 1.1.0
+envVariables:
+  conmanAppName: credit-card-streamster
+  conmanNamespace: uat
+  enabled: true
+  kafkaRole: client
+  kafkaVaultIssuer: product-uat-kafka-pki/issue/client
+  vaultBackend: kubernetes-uat
 ingress:
   dns: .staging.zopa
-  public: false # if service should be available externally
-
-envVariables: # used for the helm-variables initContainer
-  enabled: true
-  conmanNamespace: uat
-  conmanAppName: credit-card-streamster
-  vaultBackend: kubernetes-uat
-  kafkaRole: client
-  kafkaVaultIssuer: "product-uat-kafka-pki/issue/client"
-
-storage:
-  statefulSet: false
-
+  public: false
 probes:
   livenessEnabled: true
   livenessPath: /_probes/liveness
   readinessEnabled: true
   readinessPath: /_probes/readiness
+service:
+  noClusterIP: false
+  port: 443
+  secure: true
+storage:
+  statefulSet: false
