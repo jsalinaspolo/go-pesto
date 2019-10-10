@@ -19,7 +19,10 @@ import (
 )
 
 var args PestoArgs
-var helmRepository = "https://github.dns.ad.zopa.com/zopaUK/helm-state.git"
+
+//var helmRepository = "https://github.dns.ad.zopa.com/zopaUK/helm-state.git"
+//var helmRepository = "https://github.dns.ad.zopa.com/zopaUK/pesto.git"
+var helmRepository = "https://github.com/mustaine/go-pesto.git"
 var temp = "tmp"
 
 type PestoArgs struct {
@@ -65,7 +68,8 @@ func main() {
 	updateVersion()
 	commit(repository)
 	push(repository)
-	makePullRequest()
+	pr, err := makePullRequest()
+	mergePullRequest(pr)
 }
 
 func validateArgs(args []string) (*PestoArgs, error) {
@@ -184,12 +188,13 @@ func githubClient() *github.Client {
 	)
 	tc := oauth2.NewClient(context.Background(), ts)
 
-	client, err := github.NewEnterpriseClient("https://github.dns.ad.zopa.com/api/v3", "zopaUK", tc)
-	CheckIfError(err)
+	//client, err := github.NewEnterpriseClient("https://github.dns.ad.zopa.com/api/v3", "zopaUK", tc)
+	//CheckIfError(err)
+	client := github.NewClient(tc)
 	return client
 }
 
-func makePullRequest() {
+func makePullRequest() (*github.PullRequest, error) {
 	Info("make pull request")
 
 	client := githubClient()
@@ -202,13 +207,65 @@ func makePullRequest() {
 		MaintainerCanModify: github.Bool(true),
 	}
 
-	pr, _, err := client.PullRequests.Create(context.Background(), "zopaUK", "helm-state", newPR)
+	//pr, _, err := client.PullRequests.Create(context.Background(), "zopaUK", "helm-state", newPR)
+	pr, _, err := client.PullRequests.Create(context.Background(), "mustaine", "go-pesto", newPR)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	Info("PR created: %s\n", pr.GetHTMLURL())
+	return pr, nil
+}
+
+func getPullRequest(pullRequest *github.PullRequest) {
+	client := githubClient()
+	pr, _, err := client.PullRequests.Get(context.Background(), "zopaUK", "pesto", pullRequest.GetNumber())
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	Info("PR created: %s\n", pr.GetHTMLURL())
+	Info("PR GetMergeableState: %s\n", pr.GetMergeableState())
+	Info("PR GetMergeable: %s\n", pr.GetMergeable())
+
+}
+func mergePullRequest(pr *github.PullRequest) {
+	Info("merge pull request")
+
+Loop:
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		select {
+		//check exitMessage to see whether to break out or not
+		case <-ctx.Done():
+			break Loop
+		case <-time.After(10 * time.Second):
+			break Loop
+		//do something repeatedly very fast in the for loop
+		default:
+			time.Sleep(time.Second * 5)
+			getPullRequest(pr)
+			// stuff
+		}
+	}
+	//getPullRequest(pr)
+
+	//client := githubClient()
+	//
+	//options := &github.PullRequestOptions{
+	//	MergeMethod: "merge",
+	//}
+	//
+	//result, _, err := client.PullRequests.Merge(context.Background(), "zopaUK", "helm-state", pr.GetNumber(), "", options)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//
+	//Info("PR merged: %s\n", result.GetSHA())
 }
 
 func Info(format string, args ...interface{}) {
